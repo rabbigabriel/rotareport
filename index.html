@@ -20,7 +20,7 @@
   --done: #2a6f4f;
   --todo: #8f5206;
   --todo-bg: #fbefd9;
-  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --bad: #b3261e;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
@@ -35,6 +35,7 @@
     --done: #6cc49a;
     --todo: #e7b060;
     --todo-bg: #2b2112;
+    --bad: #f2b8b5;
     color-scheme: dark;
   }
 }
@@ -49,6 +50,7 @@
   --done: #6cc49a;
   --todo: #e7b060;
   --todo-bg: #2b2112;
+  --bad: #f2b8b5;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -78,15 +80,19 @@ button { cursor: pointer; }
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
   background: var(--bg); padding: 12px 0 10px; border-bottom: 1px solid var(--line);
 }
-.top-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-h1 { font-family: var(--serif); font-size: 1.35rem; margin: 0; letter-spacing: 0.01em; }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.top-right { display: flex; align-items: center; gap: 10px; }
+.btn.mini { min-height: 40px; padding: 4px 12px; font-size: 0.88rem; }
+.bad { outline: 2px solid var(--bad); outline-offset: 3px; border-radius: 8px; }
+.top .confirm { margin-top: 8px; }
+h1 { font-family: var(--sans); font-size: 1.35rem; margin: 0; letter-spacing: 0.01em; }
 .count { font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bar { height: 6px; background: var(--line); border-radius: 3px; margin: 8px 0 6px; overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
 .priv { margin: 0; font-size: 0.82rem; color: var(--muted); }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-top: 16px; }
-.card h2 { font-family: var(--serif); font-size: 1.05rem; margin: 0 0 10px; }
+.card h2 { font-family: var(--sans); font-size: 1.05rem; margin: 0 0 10px; }
 .hf { display: grid; gap: 12px; }
 .lab { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
 input[type=text], input[type=date], textarea {
@@ -169,7 +175,15 @@ input[type=date] { min-width: 0; }
   <header class="top">
     <div class="top-row">
       <h1>IMB rota report</h1>
-      <span class="count" id="count" aria-live="polite">0 of 30</span>
+      <div class="top-right">
+        <span class="count" id="count" aria-live="polite">0 of 30</span>
+        <button type="button" class="btn mini danger" id="b-new">Clear all</button>
+      </div>
+    </div>
+    <div class="confirm" id="confirm" hidden>
+      <p>This clears everything on this device, including the name and site. Continue?</p>
+      <button type="button" class="btn pri" id="b-new-yes">Clear all</button>
+      <button type="button" class="btn" id="b-new-no">Cancel</button>
     </div>
     <div class="bar" role="progressbar" aria-label="Sections completed" aria-valuemin="0" aria-valuemax="30" id="bar"><i id="barfill"></i></div>
     <p class="priv">Stays on this device. This page cannot send what you type anywhere.</p>
@@ -177,18 +191,19 @@ input[type=date] { min-width: 0; }
 
   <section class="card" aria-labelledby="h-load">
     <h2 id="h-load">Continue a saved report</h2>
-    <button type="button" class="btn" id="b-load">Load a draft (.docx)</button>
-    <input type="file" id="in-file" hidden accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    <button type="button" class="btn" id="b-load">Load a saved report</button>
+    <input type="file" id="in-file" hidden>
     <div class="confirm" id="load-confirm" hidden>
       <p id="load-confirm-text"></p>
       <button type="button" class="btn pri" id="b-load-yes">Replace the draft</button>
       <button type="button" class="btn" id="b-load-no">Cancel</button>
     </div>
-    <p class="hint" id="load-msg" role="status" aria-live="polite">Pick a Word file saved from this page. It is read on this device and goes nowhere else.</p>
+    <p class="hint" id="load-msg" role="status" aria-live="polite">Pick a saved report: Word (.docx or .doc), OpenDocument (.odt), RTF or plain text. It is read on this device and goes nowhere else.</p>
   </section>
 
   <section class="card" aria-labelledby="h-head">
     <h2 id="h-head">Report details</h2>
+    <p class="hint" style="margin:-4px 0 12px">Every item here is needed before the Word file can be saved. The name falls back to Gabriel Kanter-Webber if left blank.</p>
     <div class="hf">
       <div><label class="lab" for="in-member">IMB member name</label><input type="text" id="in-member" autocomplete="name" placeholder="Gabriel Kanter-Webber"></div>
       <fieldset class="sitebox">
@@ -208,7 +223,7 @@ input[type=date] { min-width: 0; }
         <label class="lab" for="in-date">Date of rota report</label>
         <div class="date-row">
           <input type="date" id="in-date">
-          <button type="button" class="btn" id="b-datedef">Use default</button>
+          <button type="button" class="btn" id="b-datedef">Monday after</button>
         </div>
         <p class="hint" id="date-hint"></p>
       </div>
@@ -223,12 +238,6 @@ input[type=date] { min-width: 0; }
     <div class="exp-actions">
       <button class="btn pri" id="b-docx">Save as Word file (.docx)</button>
       <button class="btn" id="b-copy">Copy as plain text</button>
-      <button class="btn danger" id="b-new">Start a new report</button>
-    </div>
-    <div class="confirm" id="confirm" hidden>
-      <p>This clears every section on this device. Continue?</p>
-      <button class="btn pri" id="b-new-yes">Clear everything</button>
-      <button class="btn" id="b-new-no">Cancel</button>
     </div>
     <p id="msg" role="status" aria-live="polite"></p>
     <textarea id="fallback" hidden readonly aria-label="Report text"></textarea>
@@ -260,7 +269,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   // tok = index of the placeholder in the Word template, in document order
   var GROUPS = [
-    { title: "Executive summary", flat: true, fields: [{ id: "exec", label: "Executive summary", tok: 3 }] },
+    { title: "Executive summary", flat: true, fields: [{ id: "exec", label: "Executive summary", tok: 3, required: true }] },
     { title: "Serious incidents", flat: true, fields: [{ id: "serious", label: "Serious incidents", tok: 4 }] },
     { title: "Safety", fields: [
       { id: "reception", label: "Reception and induction", tok: 5 },
@@ -312,7 +321,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function freshState(site, member) {
     var now = new Date();
     var mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
-    return { member: member == null ? "" : member, site: site == null ? "Tinsley House" : site, wc: isoOf(mon), visits: [], date: "", f: {}, v: 2 };
+    var wc = isoOf(mon);
+    return { member: member == null ? "" : member, site: site == null ? "" : site, wc: wc, visits: [], date: addDays(wc, 7), dateAuto: true, f: {}, v: 3 };
   }
 
   var state = freshState();
@@ -325,14 +335,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var s = JSON.parse(raw);
         if (s && typeof s === "object") {
           var base = freshState();
+          var wcL = typeof s.wc === "string" ? s.wc : base.wc;
+          var dateL = (s.v === 2 || s.v === 3) && typeof s.date === "string" ? s.date : "";
+          var auto = s.dateAuto === true;
+          if (!dateL && parseIso(wcL)) { dateL = addDays(wcL, 7); auto = true; }
           state = {
             member: typeof s.member === "string" ? s.member : "",
-            site: s.site === "Brook House" || s.site === "Tinsley House" ? s.site : base.site,
-            wc: typeof s.wc === "string" ? s.wc : base.wc,
+            site: s.site === "Brook House" || s.site === "Tinsley House" ? s.site : "",
+            wc: wcL,
             visits: Array.isArray(s.visits) ? s.visits.filter(function (n) { return n >= 0 && n <= 6; }) : [],
-            date: s.v === 2 && typeof s.date === "string" ? s.date : "",
+            date: dateL,
+            dateAuto: auto,
             f: s.f && typeof s.f === "object" ? s.f : {},
-            v: 2
+            v: 3
           };
         }
       }
@@ -340,6 +355,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   var saveTimer = null;
   function save() {
+    markErrors();
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
       try { localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; }
@@ -350,6 +366,24 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }, 250);
   }
 
+  var showErrors = false;
+  function missingItems() {
+    var m = [], wcOk = !!parseIso(state.wc);
+    if (!state.site) m.push({ label: "Site", el: "sitebox" });
+    if (!wcOk) m.push({ label: "Week commencing", el: "in-wc" });
+    if (!wcOk || !state.visits.length) m.push({ label: "At least one rota visit day", el: "days" });
+    if (!parseIso(state.date)) m.push({ label: "Date of rota report", el: "in-date" });
+    if (!isDone("exec")) m.push({ label: "Executive summary", el: "fld-exec" });
+    return m;
+  }
+  function markErrors() {
+    Array.prototype.forEach.call(document.querySelectorAll(".bad"), function (n) { n.classList.remove("bad"); });
+    if (!showErrors) return;
+    missingItems().forEach(function (it) {
+      var n = it.el === "sitebox" ? document.querySelector(".sitebox") : $(it.el);
+      if (n) n.classList.add("bad");
+    });
+  }
   function member() { return (state.member || "").trim() || DEFAULT_MEMBER; }
   function val(id) { var v = state.f[id]; return typeof v === "string" ? v : ""; }
   function lines(t) {
@@ -399,7 +433,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     ta.spellcheck = true;
     var acts = document.createElement("div"); acts.className = "acts";
     var bna = mk("N/A", "btn"), bclr = mk("Clear", "btn"), bnext = mk("Next", "btn pri grow");
-    acts.appendChild(bna); acts.appendChild(bclr); acts.appendChild(bnext);
+    if (!f.required) acts.appendChild(bna);
+    acts.appendChild(bclr); acts.appendChild(bnext);
     ed.appendChild(ta); ed.appendChild(acts);
     box.appendChild(row); box.appendChild(ed);
 
@@ -424,7 +459,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function refresh(id) {
     var e = fieldEls[id], v = val(id), ls = lines(v);
-    if (!ls.length) { e.st.textContent = "Blank"; e.st.className = "st tk"; e.pv.textContent = "Blank sections are saved as N/A"; }
+    var req = FLAT.filter(function (x) { return x.id === id; })[0].required;
+    if (!ls.length) { e.st.textContent = req ? "Required" : "Blank"; e.st.className = "st tk"; e.pv.textContent = req ? "Needed before the Word file can be saved" : "Blank sections are saved as N/A"; }
     else if (ls.length === 1 && ls[0] === "N/A") { e.st.textContent = "N/A"; e.st.className = "st"; e.pv.textContent = "Not applicable"; }
     else { e.st.textContent = "Done"; e.st.className = "st ok"; e.pv.textContent = ls.join(" ").slice(0, 140); }
     updateCounts();
@@ -486,7 +522,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return state.visits.slice().sort(function (a, b) { return a - b; }).map(function (n) { return fmt(addDays(state.wc, n)); });
   }
   function effectiveDate() {
-    return state.date ? fmt(state.date) : (parseIso(state.wc) ? fmt(addDays(state.wc, 7)) : "");
+    return state.date ? fmt(state.date) : "";
   }
   function renderDays() {
     var host = $("days"), wc = parseIso(state.wc);
@@ -516,13 +552,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   function updateDateUi() {
     var v = visitDates();
-    $("visit-sum").textContent = v.length ? "Visits: " + joinList(v) : "No day ticked. This will appear as TK in the file.";
+    $("visit-sum").textContent = v.length ? "Visits: " + joinList(v) : "";
+    $("visit-sum").hidden = !v.length;
     var wc = parseIso(state.wc);
     $("wc-warn").hidden = !wc || wc.getDay() === 1;
     var def = parseIso(state.wc) ? fmt(addDays(state.wc, 7)) : "";
-    $("date-hint").textContent = state.date
-      ? "Set by you." + (def ? " The default is " + def + "." : "")
-      : (def ? "Blank, so the report is dated " + def + ", the Monday after the week commencing." : "Pick a week commencing date first.");
+    $("date-hint").textContent = !def ? "Enter the week commencing date first."
+      : state.date === addDays(state.wc, 7) ? "Filled in as the Monday after the week commencing. Change it if needed."
+      : state.date ? "Set by you. The Monday after the week commencing is " + def + "."
+      : "Blank. The Monday after the week commencing is " + def + ".";
   }
   function syncRadios() {
     Array.prototype.forEach.call(document.querySelectorAll('input[name="site"]'), function (r) { r.checked = r.value === state.site; });
@@ -536,10 +574,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $("in-wc").value = state.wc;
     $("in-date").value = state.date;
     $("in-member").addEventListener("input", function (e) { state.member = e.target.value; save(); });
-    $("in-wc").addEventListener("input", function (e) { state.wc = e.target.value; renderDays(); save(); });
-    $("in-date").addEventListener("input", function (e) { state.date = e.target.value; updateDateUi(); save(); });
+    $("in-wc").addEventListener("input", function (e) {
+      state.wc = e.target.value;
+      if (state.dateAuto || !state.date) { state.date = addDays(state.wc, 7); state.dateAuto = true; $("in-date").value = state.date; }
+      renderDays(); save();
+    });
+    $("in-date").addEventListener("input", function (e) {
+      state.date = e.target.value;
+      state.dateAuto = !state.date || state.date === addDays(state.wc, 7);
+      updateDateUi(); save();
+    });
     $("b-datedef").addEventListener("click", function () {
-      state.date = ""; $("in-date").value = ""; updateDateUi(); save();
+      state.date = addDays(state.wc, 7); state.dateAuto = true; $("in-date").value = state.date; updateDateUi(); save();
     });
     renderDays();
   }
@@ -610,10 +656,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return site + (d ? " " + d : "") + ".docx";
   }
 
-  function say(text, bad) { var m = $("msg"); m.textContent = text; m.style.color = bad ? "var(--todo)" : "var(--ink)"; }
+  function say(text, bad) { var m = $("msg"); m.textContent = text; m.style.color = bad ? "var(--bad)" : "var(--ink)"; }
 
   var downloads = null;
   async function saveDocx() {
+    var miss = missingItems();
+    if (miss.length) {
+      showErrors = true; markErrors();
+      say("The Word file cannot be saved yet. Still needed: " + miss.map(function (x) { return x.label; }).join("; ") + ".", true);
+      var first = miss[0], n = first.el === "sitebox" ? document.querySelector(".sitebox") : $(first.el);
+      if (n && n.scrollIntoView) n.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
     $("b-docx").disabled = true;
     try {
       var blob = await buildDocx();
@@ -643,14 +697,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function startNew() {
-    var keep = state.site, keepMember = state.member;
-    state = freshState(keep, keepMember);
+    state = freshState();
+    showErrors = false; markErrors();
     try { localStorage.removeItem(KEY); } catch (e) {}
     FLAT.forEach(function (f) { fieldEls[f.id].ta.value = ""; refresh(f.id); });
     closeAll();
-    $("in-wc").value = state.wc; $("in-date").value = ""; renderDays();
-    $("confirm").hidden = true; $("fallback").hidden = true;
-    say("Cleared.");
+    $("in-member").value = ""; syncRadios();
+    $("in-wc").value = state.wc; $("in-date").value = state.date; renderDays();
+    $("confirm").hidden = true; $("fallback").hidden = true; $("load-confirm").hidden = true; pending = null;
+    $("load-msg").textContent = "Cleared. Everything on screen has been reset.";
+    say("");
     $("saved").textContent = "";
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -700,12 +756,195 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     for (var i = lines.length - 1; i >= 0; i--) if (re.test(lines[i])) return i;
     return -1;
   }
+
+  // ---------- readers for other formats (all run in the browser) ----------
+  var TXT_NS = "urn:oasis:names:tc:opendocument:xmlns:text:1.0";
+  var CP1252 = new TextDecoder("windows-1252"), UTF16 = new TextDecoder("utf-16le");
+  function splitLines(text) {
+    return String(text).split(/\r\n|\r|\n|\u000b|\u000c/).map(function (l) {
+      return l.replace(/\s+/g, " ").trim();
+    }).filter(Boolean);
+  }
+  function odtLines(xml) {
+    var doc = new DOMParser().parseFromString(xml, "application/xml");
+    if (doc.getElementsByTagName("parsererror").length) throw new Error("unreadable");
+    function skipped(el) {
+      for (var n = el.parentNode; n && n.nodeType === 1; n = n.parentNode) {
+        var ln = n.localName;
+        if (ln === "tracked-changes" || ln === "note" || ln === "annotation") return true;
+      }
+      return false;
+    }
+    function textOf(n) {
+      var t = "";
+      for (var c = n.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType === 3) t += c.nodeValue;
+        else if (c.nodeType === 1) {
+          var ln = c.localName;
+          if (ln === "tab") t += "\t";
+          else if (ln === "line-break") t += "\n";
+          else if (ln === "s") t += new Array((parseInt(c.getAttributeNS(TXT_NS, "c") || "1", 10) || 1) + 1).join(" ");
+          else if (ln === "note" || ln === "annotation") continue;
+          else t += textOf(c);
+        }
+      }
+      return t;
+    }
+    var all = doc.getElementsByTagName("*"), out = [];
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      if ((el.localName === "p" || el.localName === "h") && el.namespaceURI === TXT_NS && !skipped(el)) out.push(textOf(el));
+    }
+    return splitLines(out.join("\n"));
+  }
+  var RTF_SKIP = { fonttbl: 1, colortbl: 1, stylesheet: 1, info: 1, pict: 1, header: 1, footer: 1, headerl: 1, headerr: 1, headerf: 1,
+    footerl: 1, footerr: 1, footerf: 1, footnote: 1, object: 1, themedata: 1, colorschememapping: 1, latentstyles: 1,
+    datastore: 1, listtable: 1, listoverridetable: 1, rsidtbl: 1, generator: 1, xmlnstbl: 1, fldinst: 1 };
+  var RTF_CHARS = { emdash: "—", endash: "–", lquote: "‘", rquote: "’", ldblquote: "“", rdblquote: "”", bullet: "•" };
+  function rtfLines(src) {
+    var out = [], st = { skip: false, uc: 1 }, stack = [], i = 0, n = src.length, m;
+    function hexChar(v) { return CP1252.decode(new Uint8Array([v])); }
+    while (i < n) {
+      var ch = src.charAt(i);
+      if (ch === "{") { stack.push(st); st = { skip: st.skip, uc: st.uc }; i++; }
+      else if (ch === "}") { st = stack.pop() || st; i++; }
+      else if (ch === "\\") {
+        var nx = src.charAt(i + 1);
+        if (nx === "'") { if (!st.skip) out.push(hexChar(parseInt(src.substr(i + 2, 2), 16) || 63)); i += 4; }
+        else if (/[A-Za-z]/.test(nx)) {
+          m = /^\\([A-Za-z]+)(-?\d+)? ?/.exec(src.substr(i, 48));
+          i += m[0].length;
+          var w = m[1], num = m[2];
+          if (RTF_SKIP[w]) st.skip = true;
+          else if (!st.skip) {
+            if (w === "par" || w === "line" || w === "sect" || w === "page" || w === "row" || w === "cell") out.push("\n");
+            else if (w === "tab") out.push("\t");
+            else if (w === "uc") st.uc = parseInt(num, 10) || 0;
+            else if (w === "u") {
+              var code = parseInt(num, 10); if (code < 0) code += 65536;
+              out.push(String.fromCharCode(code));
+              for (var k = 0; k < st.uc; k++) { if (src.substr(i, 2) === "\\'") i += 4; else i += 1; }
+            } else if (RTF_CHARS[w]) out.push(RTF_CHARS[w]);
+          }
+        }
+        else if (nx === "*") { st.skip = true; i += 2; }
+        else if (nx === "\\" || nx === "{" || nx === "}") { if (!st.skip) out.push(nx); i += 2; }
+        else if (nx === "~") { if (!st.skip) out.push(" "); i += 2; }
+        else if (nx === "\n" || nx === "\r") { if (!st.skip) out.push("\n"); i += 2; }
+        else i += 2;
+      }
+      else if (ch === "\r" || ch === "\n") i++;
+      else { if (!st.skip) out.push(ch); i++; }
+    }
+    return splitLines(out.join(""));
+  }
+  function u16(b, o) { return b[o] | (b[o + 1] << 8); }
+  function u32(b, o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0; }
+  function cfbReader(b) {
+    var ss = 1 << u16(b, 0x1E), mss = 1 << u16(b, 0x20), END = 0xFFFFFFFA;
+    var nFat = u32(b, 0x2C), dirStart = u32(b, 0x30), cutoff = u32(b, 0x38), miniStart = u32(b, 0x3C), difStart = u32(b, 0x44), nDif = u32(b, 0x48);
+    function secOff(s) { return (s + 1) * ss; }
+    var fatSecs = [], i, j;
+    for (i = 0; i < 109 && fatSecs.length < nFat; i++) { var s0 = u32(b, 0x4C + i * 4); if (s0 < END) fatSecs.push(s0); }
+    var d = difStart;
+    for (i = 0; i < nDif && d < END; i++) {
+      var off = secOff(d);
+      for (j = 0; j < ss / 4 - 1 && fatSecs.length < nFat; j++) { var s1 = u32(b, off + j * 4); if (s1 < END) fatSecs.push(s1); }
+      d = u32(b, off + ss - 4);
+    }
+    var fat = [];
+    fatSecs.forEach(function (s) { var o = secOff(s); for (var q = 0; q < ss / 4; q++) fat.push(u32(b, o + q * 4)); });
+    function chain(start) { var out = [], s = start, g = 0; while (s < END && s !== undefined && g++ < 1000000) { out.push(s); s = fat[s]; } return out; }
+    function readChain(start, size) {
+      var secs = chain(start), buf = new Uint8Array(secs.length * ss);
+      secs.forEach(function (s, k) { buf.set(b.subarray(secOff(s), secOff(s) + ss), k * ss); });
+      return size == null ? buf : buf.subarray(0, size);
+    }
+    var dir = readChain(dirStart), entries = [];
+    for (var o = 0; o + 128 <= dir.length; o += 128) {
+      var nl = u16(dir, o + 0x40), name = "";
+      for (var c = 0; c < nl / 2 - 1; c++) name += String.fromCharCode(u16(dir, o + c * 2));
+      entries.push({ name: name, type: dir[o + 0x42], start: u32(dir, o + 0x74), size: u32(dir, o + 0x78) });
+    }
+    var root = entries.filter(function (e) { return e.type === 5; })[0], mini = null, miniFat = null;
+    function loadMini() {
+      if (mini) return;
+      mini = readChain(root.start, root.size); miniFat = [];
+      var mb = readChain(miniStart);
+      for (var q = 0; q < mb.length / 4; q++) miniFat.push(u32(mb, q * 4));
+    }
+    return {
+      stream: function (name) {
+        var e = entries.filter(function (x) { return x.type === 2 && x.name === name; })[0];
+        if (!e) return null;
+        if (e.size < cutoff) {
+          loadMini();
+          var out = new Uint8Array(e.size), s = e.start, pos = 0, g = 0;
+          while (s < END && s !== undefined && pos < e.size && g++ < 1000000) {
+            out.set(mini.subarray(s * mss, s * mss + mss).subarray(0, Math.min(mss, e.size - pos)), pos);
+            pos += mss; s = miniFat[s];
+          }
+          return out;
+        }
+        return readChain(e.start, e.size);
+      }
+    };
+  }
+  function oleDocLines(b) {
+    var cfb = cfbReader(b), wd = cfb.stream("WordDocument");
+    if (!wd || u16(wd, 0) !== 0xA5EC) throw new Error("unsupported");
+    var flags = u16(wd, 0x0A);
+    if (flags & 0x0100) throw new Error("encrypted");
+    var tbl = cfb.stream(flags & 0x0200 ? "1Table" : "0Table");
+    if (!tbl) throw new Error("unsupported");
+    var pos = 32, csw = u16(wd, pos); pos += 2 + csw * 2;
+    var cslw = u16(wd, pos), lw = pos + 2; pos = lw + cslw * 4;
+    var blob = pos + 2, ccpText = u32(wd, lw + 12);
+    var fcClx = u32(wd, blob + 33 * 8), lcbClx = u32(wd, blob + 33 * 8 + 4);
+    var clx = tbl.subarray(fcClx, fcClx + lcbClx), p = 0;
+    while (p < clx.length && clx[p] === 1) p += 3 + u16(clx, p + 1);
+    if (clx[p] !== 2) throw new Error("unsupported");
+    var lcb = u32(clx, p + 1), plc = clx.subarray(p + 5, p + 5 + lcb), n = Math.floor((lcb - 4) / 12), text = "";
+    for (var i = 0; i < n && text.length < ccpText; i++) {
+      var cpS = u32(plc, i * 4), cpE = u32(plc, (i + 1) * 4), fc = u32(plc, (n + 1) * 4 + i * 8 + 2), len = cpE - cpS;
+      if (fc & 0x40000000) { var o1 = (fc & 0x3FFFFFFF) >>> 1; text += CP1252.decode(wd.subarray(o1, o1 + len)); }
+      else text += UTF16.decode(wd.subarray(fc, fc + len * 2));
+    }
+    text = text.slice(0, ccpText);
+    var out = "", fields = [];
+    for (var k = 0; k < text.length; k++) {
+      var ch = text.charAt(k);
+      if (ch === "\x13") { fields.push("code"); continue; }
+      if (ch === "\x14") { if (fields.length) fields[fields.length - 1] = "result"; continue; }
+      if (ch === "\x15") { fields.pop(); continue; }
+      if (fields.indexOf("code") >= 0) continue;
+      out += ch;
+    }
+    return splitLines(out.replace(/\x07/g, "\n").replace(/[\x01\x02\x08]/g, ""));
+  }
+  function textLines(b) {
+    var enc = "utf-8";
+    if (b[0] === 0xFF && b[1] === 0xFE) enc = "utf-16le"; else if (b[0] === 0xFE && b[1] === 0xFF) enc = "utf-16be";
+    var t = new TextDecoder(enc).decode(b), bad = (t.match(/[\x00-\x08\x0e-\x1f]/g) || []).length;
+    if (bad > t.length * 0.02 + 2) throw new Error("unsupported");
+    return splitLines(t);
+  }
+  async function linesFromBytes(b) {
+    if (b[0] === 0x50 && b[1] === 0x4B) {
+      var zip;
+      try { zip = await JSZip.loadAsync(b); } catch (e) { throw new Error("unsupported"); }
+      if (zip.file("word/document.xml")) return docLines(await zip.file("word/document.xml").async("string"));
+      if (zip.file("content.xml")) return odtLines(await zip.file("content.xml").async("string"));
+      throw new Error("unsupported");
+    }
+    if (b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) return oleDocLines(b);
+    var head = CP1252.decode(b.subarray(0, 8));
+    if (head.indexOf("{\\rtf") === 0) return rtfLines(CP1252.decode(b));
+    if (head.indexOf("%PDF") === 0) throw new Error("pdf");
+    return textLines(b);
+  }
   async function parseDraft(file) {
-    var zip;
-    try { zip = await JSZip.loadAsync(await file.arrayBuffer()); } catch (e) { throw new Error("notdocx"); }
-    var entry = zip.file("word/document.xml");
-    if (!entry) throw new Error("notdocx");
-    var lines = docLines(await entry.async("string"));
+    var lines = await linesFromBytes(new Uint8Array(await file.arrayBuffer()));
 
     var iName = lastIndexMatching(lines, /^NAME:/i), iDate = lastIndexMatching(lines, /^Date of Rota Report:/i);
     var cut = [iName, iDate].filter(function (i) { return i >= 0; });
@@ -742,7 +981,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return res;
   }
   function draftToState(res) {
-    var st = { v: 2, f: res.f, visits: [], date: "" };
+    var st = { v: 3, f: res.f, visits: [], date: "", dateAuto: true };
     var site = res.siteText || "";
     st.site = /brook/i.test(site) ? "Brook House" : /tinsley/i.test(site) ? "Tinsley House" : state.site;
     var mem = (res.member || "").trim();
@@ -755,7 +994,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (n >= 0 && n <= 6) { if (st.visits.indexOf(n) < 0) st.visits.push(n); } else outside++;
     });
     var ds = longDates(res.dateText);
-    st.date = ds[0] && ds[0] !== addDays(st.wc, 7) ? ds[0] : "";
+    st.date = ds[0] || addDays(st.wc, 7);
+    st.dateAuto = !ds[0] || ds[0] === addDays(st.wc, 7);
     return { st: st, outside: outside, found: res.found };
   }
   function applyDraft(pack, name) {
@@ -791,9 +1031,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         $("load-msg").textContent = "Read " + pack.found + " sections from " + file.name + ". Waiting for your confirmation.";
       } else applyDraft(pack, file.name);
     } catch (err) {
-      $("load-msg").textContent = err && err.message === "notreport"
-        ? "That file does not look like a report saved from this page, so nothing was changed."
-        : "That file could not be read as a Word document, so nothing was changed.";
+      var why = err && err.message, nothing = " Nothing was changed.";
+      $("load-msg").textContent =
+        why === "notreport" ? "That file does not look like a report saved from this page." + nothing :
+        why === "pdf" ? "PDF files cannot be read back into the form. Save the report as Word, ODT, RTF or plain text and load that." + nothing :
+        why === "encrypted" ? "That document is password-protected. Remove the password and try again." + nothing :
+        "That file could not be read. Word (.docx and .doc), OpenDocument (.odt), RTF and plain text files work." + nothing;
     }
   }
 
